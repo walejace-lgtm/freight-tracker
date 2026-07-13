@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freight Tracker Pro</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3b82f6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/icon-192.svg">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#0a0e1a;--bg2:#111827;--glass:rgba(255,255,255,.03);--border:rgba(255,255,255,.08);--t1:#f1f5f9;--t2:#94a3b8;--t3:#64748b;--accent:#3b82f6;--glow:rgba(59,130,246,.3);--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;--purple:#8b5cf6;--cyan:#06b6d4;--pink:#ec4899}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(59,130,246,.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(139,92,246,.06) 0%,transparent 50%),radial-gradient(ellipse at 50% 50%,rgba(6,182,212,.04) 0%,transparent 70%);pointer-events:none;z-index:0}
+.container{max-width:1400px;margin:0 auto;padding:24px;position:relative;z-index:1}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;padding:20px 28px;background:var(--glass);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(20px)}
+.logo{display:flex;align-items:center;gap:14px}
+.logo-icon{width:44px;height:44px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 20px var(--glow)}
+.logo h1{font-size:22px;font-weight:700;background:linear-gradient(135deg,var(--t1),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.5px}
+.logo p{font-size:12px;color:var(--t3);margin-top:2px}
+.nav-links{display:flex;gap:8px;align-items:center}
+.btn{padding:14px 28px;border:none;border-radius:12px;font-weight:600;font-size:14px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;box-shadow:0 4px 20px var(--glow)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 30px var(--glow)}
+.btn-secondary{background:var(--glass);color:var(--t2);border:1px solid var(--border)}
+.btn-secondary:hover{background:rgba(255,255,255,.06);color:var(--t1)}
+.btn-success{background:linear-gradient(135deg,var(--ok),#16a34a);color:#fff}
+.btn-danger{background:linear-gradient(135deg,var(--err),#dc2626);color:#fff}
+.btn-sm{padding:8px 16px;font-size:12px;border-radius:8px}
+.mode-toggle{display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.mode-btn{padding:10px 16px;border:none;background:transparent;color:var(--t3);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.mode-btn.active{background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff}
+.mode-btn:hover:not(.active){color:var(--t1)}
+.carrier-select{padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--t1);font-size:13px;min-width:140px}
+.carrier-select:focus{outline:none;border-color:var(--accent)}
+.search-section{margin-bottom:28px}
+.search-box{display:flex;gap:12px;padding:20px 24px;background:var(--glass);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(20px)}
+.search-input-wrapper{flex:1;position:relative}
+.search-input-wrapper svg{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--t3);width:20px;height:20px}
+.search-input{width:100%;padding:14px 16px 14px 48px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;color:var(--t1);font-size:15px;font-family:'JetBrains Mono',monospace;letter-spacing:1px;text-transform:uppercase;transition:all .2s}
+.search-input::placeholder{color:var(--t3);text-transform:none;font-family:inherit;letter-spacing:normal}
+.search-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat-card{padding:20px;background:var(--glass);border:1px solid var(--border);border-radius:12px;backdrop-filter:blur(20px);text-align:center}
+.stat-card .sv{font-size:28px;font-weight:700;margin-bottom:4px}
+.stat-card .sl{font-size:12px;color:var(--t3);text-transform:uppercase;letter-spacing:1px}
+.stat-card.blue .sv{color:var(--accent)}.stat-card.green .sv{color:var(--ok)}.stat-card.yellow .sv{color:var(--warn)}.stat-card.purple .sv{color:var(--purple)}
+.main-layout{display:grid;grid-template-columns:1fr 420px;gap:24px;min-height:600px}
+.map-container{background:var(--glass);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.map-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.map-header h3{font-size:14px;font-weight:600;color:var(--t2)}
+.map-legend{display:flex;gap:16px;font-size:11px}
+.legend-item{display:flex;align-items:center;gap:6px;color:var(--t3)}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+#map{height:520px;background:#0d1117}
+.tracking-panel{display:flex;flex-direction:column;gap:20px}
+.panel-card{background:var(--glass);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(20px);overflow:hidden}
+.panel-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.panel-header h3{font-size:14px;font-weight:600;color:var(--t2)}
+.panel-body{padding:20px}
+.shipment-info{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.info-item{padding:12px;background:var(--bg2);border-radius:10px;border:1px solid var(--border)}
+.info-item .label{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.info-item .value{font-size:14px;font-weight:600;color:var(--t1)}
+.info-item.full{grid-column:span 2}
+.progress-section{margin-top:16px}
+.progress-header{display:flex;justify-content:space-between;margin-bottom:8px}
+.progress-header span{font-size:12px;color:var(--t3)}
+.progress-header strong{font-size:14px;color:var(--accent)}
+.progress-track{height:8px;background:var(--bg2);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--purple));transition:width .5s;position:relative}
+.progress-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);animation:shimmer 2s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.route-steps{position:relative;padding-left:24px}
+.route-steps::before{content:'';position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:var(--border)}
+.route-step{position:relative;padding:12px 0}
+.route-step::before{content:'';position:absolute;left:-20px;top:18px;width:12px;height:12px;border-radius:50%;background:var(--bg2);border:2px solid var(--border);z-index:1}
+.route-step.completed::before{background:var(--ok);border-color:var(--ok);box-shadow:0 0 10px rgba(34,197,94,.4)}
+.route-step.active::before{background:var(--accent);border-color:var(--accent);box-shadow:0 0 10px var(--glow);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 10px var(--glow)}50%{box-shadow:0 0 20px var(--glow),0 0 30px var(--glow)}}
+.step-content{padding-left:8px}
+.step-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.step-city{font-size:13px;font-weight:600;color:var(--t1)}
+.step-time{font-size:11px;color:var(--t3)}
+.step-status{font-size:12px;color:var(--t2)}
+.step-description{font-size:11px;color:var(--t3);margin-top:4px}
+.shipment-list{max-height:200px;overflow-y:auto}
+.shipment-list::-webkit-scrollbar{width:4px}
+.shipment-list::-webkit-scrollbar-track{background:transparent}
+.shipment-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.shipment-item{display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s}
+.shipment-item:hover{background:var(--glass)}
+.shipment-item .btn-danger{opacity:0;transition:opacity .2s}
+.shipment-item:hover .btn-danger{opacity:1}
+.shipment-item:last-child{border-bottom:none}
+.shipment-item .tracking-num{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--accent)}
+.shipment-item .shipment-route{font-size:11px;color:var(--t3);margin-top:2px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600}
+.badge-pu{background:rgba(59,130,246,.15);color:var(--accent)}
+.badge-it{background:rgba(245,158,11,.15);color:var(--warn)}
+.badge-oh{background:rgba(139,92,246,.15);color:var(--purple)}
+.badge-dl{background:rgba(34,197,94,.15);color:var(--ok)}
+.badge-ex{background:rgba(239,68,68,.15);color:var(--err)}
+.badge-aw{background:rgba(6,182,212,.15);color:var(--cyan)}
+.badge-dp{background:rgba(236,72,153,.15);color:var(--pink)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:32px;width:480px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal h2{font-size:20px;margin-bottom:8px}
+.modal>p{font-size:13px;color:var(--t3);margin-bottom:24px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.form-group input,.form-group select{width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--t1);font-size:14px}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--accent)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-actions{display:flex;gap:12px;margin-top:24px}
+.modal-actions .btn{flex:1;justify-content:center}
+.empty-state{text-align:center;padding:60px 20px;color:var(--t3)}
+.empty-state svg{width:64px;height:64px;margin-bottom:16px;opacity:.3}
+.empty-state h3{font-size:16px;color:var(--t2);margin-bottom:8px}
+.toast{position:fixed;bottom:24px;right:24px;padding:14px 20px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;color:var(--t1);font-size:13px;font-weight:500;box-shadow:0 10px 40px rgba(0,0,0,.3);transform:translateY(100px);opacity:0;transition:all .3s;z-index:2000}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-left:3px solid var(--ok)}.toast.error{border-left:3px solid var(--err)}.toast.info{border-left:3px solid var(--accent)}
+.leaflet-container{background:#0d1117!important;font-family:inherit!important}
+.custom-marker{background:none;border:none}
+.marker-dot{width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 20px var(--glow),0 2px 8px rgba(0,0,0,.3)}
+.marker-dot.origin{background:var(--ok);box-shadow:0 0 20px rgba(34,197,94,.4),0 2px 8px rgba(0,0,0,.3)}
+.marker-dot.destination{background:var(--err);box-shadow:0 0 20px rgba(239,68,68,.4),0 2px 8px rgba(0,0,0,.3)}
+.marker-dot.current{background:var(--accent);animation:markerPulse 1.5s infinite}
+@keyframes markerPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+.marker-label{position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:var(--bg2);padding:4px 8px;border-radius:4px;font-size:10px;font-weight:600;white-space:nowrap;border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+@media(max-width:1024px){.main-layout{grid-template-columns:1fr}.stats-bar{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.header{flex-direction:column;gap:16px}.search-box{flex-direction:column}.stats-bar{grid-template-columns:1fr}.shipment-info{grid-template-columns:1fr}.info-item.full{grid-column:span 1}}
+.user-menu{display:flex;align-items:center;gap:12px}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;cursor:pointer}
+.user-name{font-size:13px;color:var(--t2);font-weight:600}
+.notification-bell{position:relative;cursor:pointer;padding:8px;border-radius:8px;transition:background .2s}
+.notification-bell:hover{background:var(--glass)}
+.notification-badge{position:absolute;top:2px;right:2px;width:16px;height:16px;background:var(--err);border-radius:50%;font-size:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+.notification-dropdown{position:absolute;top:100%;right:0;width:320px;max-height:400px;overflow-y:auto;background:var(--bg2);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.5);z-index:100;display:none}
+.notification-dropdown.show{display:block}
+.notification-item{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s}
+.notification-item:hover{background:var(--glass)}
+.notification-item.unread{background:rgba(59,130,246,.05)}
+.notification-item .title{font-size:13px;font-weight:600;color:var(--t1)}
+.notification-item .msg{font-size:11px;color:var(--t3);margin-top:2px}
+.notification-item .time{font-size:10px;color:var(--t3);margin-top:4px}
+.filter-bar{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.filter-btn{padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--t3);font-size:11px;cursor:pointer;transition:all .2s}
+.filter-btn:hover,.filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.theme-toggle{cursor:pointer;padding:8px;border-radius:8px;transition:background .2s;display:flex;align-items:center}
+.theme-toggle:hover{background:var(--glass)}
+.light-theme{--bg:#f8fafc;--bg2:#ffffff;--glass:rgba(0,0,0,.02);--border:rgba(0,0,0,.08);--t1:#1e293b;--t2:#475569;--t3:#94a3b8}
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">&#x1F6A2;</div>
+      <div><h1>Freight Tracker Pro</h1><p>Real-time shipment visibility</p></div>
+    </div>
+    <nav class="nav-links">
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="modeSim" onclick="setMode('simulated')">Simulated</button>
+        <button class="mode-btn" id="modeReal" onclick="setMode('real')">Real Tracking</button>
+      </div>
+      <div class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </div>
+      <div class="notification-bell" onclick="toggleNotifications()" id="notifBell">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <div class="notification-badge" id="notifCount" style="display:none">0</div>
+        <div class="notification-dropdown" id="notifDropdown">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px;font-weight:600">Notifications</span>
+            <button class="btn btn-secondary btn-sm" onclick="markAllRead()" style="font-size:10px;padding:4px 8px">Mark all read</button>
+          </div>
+          <div id="notifList"></div>
+        </div>
+      </div>
+      <div class="user-menu" id="userMenu">
+        <div id="authButtons">
+          <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login')">Login</button>
+          <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Sign Up</button>
+        </div>
+        <div id="userProfile" style="display:none">
+          <div class="user-avatar" id="userAvatar" onclick="toggleUserMenu()">U</div>
+          <div class="user-dropdown" id="userDropdown" style="display:none;position:absolute;top:100%;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:8px;min-width:150px;box-shadow:0 10px 40px rgba(0,0,0,.5);z-index:100">
+            <div style="padding:8px 12px;font-size:12px;color:var(--t3)" id="userEmail"></div>
+            <button class="btn btn-secondary btn-sm" onclick="exportCSV()" style="width:100%;justify-content:center;margin:4px 0;font-size:11px">Export CSV</button>
+            <button class="btn btn-danger btn-sm" onclick="logout()" style="width:100%;justify-content:center;margin:4px 0;font-size:11px">Logout</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="autoRefreshBtn" onclick="toggleAutoRefresh()" style="font-size:11px">Auto-refresh: OFF</button>
+      <button class="btn btn-primary" onclick="openGenerateModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Generate
+      </button>
+    </nav>
+  </header>
+
+  <section class="search-section">
+    <div class="search-box">
+      <select class="carrier-select" id="carrierSelect" style="display:none">
+        <option value="">Auto-detect carrier</option>
+        <option value="fedex">FedEx</option>
+        <option value="ups">UPS</option>
+        <option value="usps">USPS</option>
+        <option value="dhl">DHL</option>
+        <option value="dhl-express">DHL Express</option>
+        <option value="amazon">Amazon</option>
+        <option value="ontrac">OnTrac</option>
+        <option value="lasership">LaserShip</option>
+        <option value="mondial">Mondial Relay</option>
+        <option value="colissimo">Colissimo</option>
+        <option value="dpd">DPD</option>
+        <option value="gls">GLS</option>
+        <option value="hermes">Hermes</option>
+        <option value="royal-mail">Royal Mail</option>
+        <option value="australia-post">Australia Post</option>
+        <option value="canada-post">Canada Post</option>
+        <option value="japan-post">Japan Post</option>
+        <option value="china-post">China Post</option>
+        <option value="singpost">SingPost</option>
+      </select>
+      <div class="search-input-wrapper">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" class="search-input" id="trackingInput" placeholder="Enter tracking number (e.g., FX1234567890)" maxlength="34">
+      </div>
+      <button class="btn btn-primary" onclick="trackShipment()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Track
+      </button>
+      <button class="btn btn-secondary" onclick="openBulkModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Bulk
+      </button>
+    </div>
+  </section>
+
+  <div class="stats-bar">
+    <div class="stat-card blue"><div class="sv" id="totalShipments">0</div><div class="sl">Total</div></div>
+    <div class="stat-card green"><div class="sv" id="activeShipments">0</div><div class="sl">Active</div></div>
+    <div class="stat-card yellow"><div class="sv" id="inTransit">0</div><div class="sl">In Transit</div></div>
+    <div class="stat-card purple"><div class="sv" id="delivered">0</div><div class="sl">Delivered</div></div>
+  </div>
+
+  <div class="main-layout">
+    <div class="map-container">
+      <div class="map-header">
+        <h3>Shipment Map</h3>
+        <div class="map-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--ok)"></div>Origin</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>In Transit</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--err)"></div>Destination</div>
+        </div>
+      </div>
+      <div id="map"></div>
+    </div>
+    <div class="tracking-panel">
+      <div class="panel-card" id="shipmentDetails">
+        <div class="panel-header"><h3>Shipment Details</h3><span class="badge badge-it" id="statusBadge" style="display:none"></span></div>
+        <div class="panel-body" id="shipmentInfo">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            <h3>No shipment selected</h3>
+            <p>Enter a tracking number or generate a new shipment</p>
+          </div>
+        </div>
+      </div>
+      <div class="panel-card" id="routeCard" style="display:none">
+        <div class="panel-header"><h3>Route Timeline</h3></div>
+        <div class="panel-body"><div class="route-steps" id="routeSteps"></div></div>
+      </div>
+      <div class="panel-card">
+        <div class="panel-header"><h3>Active Shipments</h3><button class="btn btn-secondary btn-sm" onclick="loadShipments()">Refresh</button></div>
+        <div class="panel-body" style="padding:0">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+            <input type="text" id="searchShipments" placeholder="Search shipments..." style="width:100%;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--t1);font-size:12px" oninput="filterShipments()">
+            <div class="filter-bar">
+              <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+              <button class="filter-btn" onclick="setFilter('active',this)">Active</button>
+              <button class="filter-btn" onclick="setFilter('transit',this)">In Transit</button>
+              <button class="filter-btn" onclick="setFilter('delivered',this)">Delivered</button>
+            </div>
+          </div>
+          <div class="shipment-list" id="shipmentList"><div class="empty-state" style="padding:30px"><p>No active shipments</p></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="generateModal">
+  <div class="modal">
+    <h2>Generate Shipment</h2>
+    <p>Create a new simulated shipment with tracking number</p>
+    <div class="form-row">
+      <div class="form-group"><label>Origin City</label><select id="originCity"><option value="">Random</option><option>Los Angeles, CA</option><option>Phoenix, AZ</option><option>Dallas, TX</option><option>Houston, TX</option><option>Atlanta, GA</option><option>Chicago, IL</option><option>New York, NY</option><option>Miami, FL</option><option>Seattle, WA</option><option>Denver, CO</option></select></div>
+      <div class="form-group"><label>Destination City</label><select id="destCity"><option value="">Random</option><option>Los Angeles, CA</option><option>Phoenix, AZ</option><option>Dallas, TX</option><option>Houston, TX</option><option>Atlanta, GA</option><option>Chicago, IL</option><option>New York, NY</option><option>Miami, FL</option><option>Seattle, WA</option><option>Denver, CO</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Stops</label><input type="number" id="numStops" min="1" max="6" value="2"></div>
+      <div class="form-group"><label>Starting Progress %</label><input type="number" id="startProgress" min="0" max="100" value="30"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeGenerateModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="generateShipment()">Generate</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="bulkModal">
+  <div class="modal">
+    <h2>Bulk Generate</h2>
+    <p>Create multiple shipments at once</p>
+    <div class="form-group"><label>Count</label><input type="number" id="bulkCount" min="1" max="50" value="5"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeBulkModal()">Cancel</button>
+      <button class="btn btn-success" onclick="bulkGenerate()">Generate All</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <h2 id="authTitle">Login</h2>
+    <p id="authSubtitle">Welcome back to Freight Tracker Pro</p>
+    
+    <div id="githubLoginSection" style="margin-bottom:20px">
+      <button class="btn btn-secondary" onclick="loginWithGitHub()" style="width:100%;justify-content:center;gap:10px;background:#24292e;color:#fff;border:none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        Login with GitHub
+      </button>
+    </div>
+    
+    <div style="text-align:center;margin-bottom:20px;color:var(--t3);font-size:12px;position:relative">
+      <div style="position:absolute;left:0;right:0;top:50%;border-top:1px solid var(--border)"></div>
+      <span style="background:var(--bg2);padding:0 12px;position:relative">or continue with email</span>
+    </div>
+    
+    <div id="registerFields" style="display:none">
+      <div class="form-group"><label>Username</label><input type="text" id="authUsername" placeholder="Enter username"></div>
+    </div>
+    <div class="form-group"><label>Email</label><input type="email" id="authEmail" placeholder="Enter email"></div>
+    <div class="form-group"><label>Password</label><input type="password" id="authPassword" placeholder="Enter password"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeAuthModal()">Cancel</button>
+      <button class="btn btn-primary" id="authSubmitBtn" onclick="submitAuth()">Login</button>
+    </div>
+    <p style="text-align:center;margin-top:16px;font-size:12px;color:var(--t3)">
+      <span id="authToggleText">Don't have an account?</span>
+      <a href="#" id="authToggleLink" onclick="toggleAuthMode();return false" style="color:var(--accent)">Sign Up</a>
+    </p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CITIES=[{name:"Los Angeles, CA",lat:34.0522,lng:-118.2437},{name:"Phoenix, AZ",lat:33.4484,lng:-112.074},{name:"Dallas, TX",lat:32.7767,lng:-96.797},{name:"Houston, TX",lat:29.7604,lng:-95.3698},{name:"Atlanta, GA",lat:33.749,lng:-84.388},{name:"Chicago, IL",lat:41.8781,lng:-87.6298},{name:"Nashville, TN",lat:36.1627,lng:-86.7816},{name:"Memphis, TN",lat:35.1495,lng:-90.049},{name:"Indianapolis, IN",lat:39.7684,lng:-86.1581},{name:"Columbus, OH",lat:39.9612,lng:-82.9988},{name:"Detroit, MI",lat:42.3314,lng:-83.0458},{name:"New York, NY",lat:40.7128,lng:-74.006},{name:"Philadelphia, PA",lat:39.9526,lng:-75.1652},{name:"Charlotte, NC",lat:35.2271,lng:-80.8431},{name:"Miami, FL",lat:25.7617,lng:-80.1918},{name:"Seattle, WA",lat:47.6062,lng:-122.3321},{name:"Denver, CO",lat:39.7392,lng:-104.9903},{name:"Kansas City, MO",lat:39.0997,lng:-94.5786},{name:"Minneapolis, MN",lat:44.9778,lng:-93.265},{name:"Salt Lake City, UT",lat:40.7608,lng:-111.891}];
+const CARRIERS=["FedEx Freight","FedEx Priority","FedEx Economy","UPS Freight","Old Dominion","XPO Logistics","Estes Express"];
+const STATUSES=[{code:"PU",label:"Picked Up",color:"#3b82f6"},{code:"IT",label:"In Transit",color:"#f59e0b"},{code:"OH",label:"Out for Delivery",color:"#8b5cf6"},{code:"DL",label:"Delivered",color:"#22c55e"},{code:"EX",label:"Exception",color:"#ef4444"},{code:"AW",label:"Arrived at Warehouse",color:"#06b6d4"},{code:"DP",label:"Departed Facility",color:"#ec4899"}];
+const WEIGHTS=["500 lbs","1,200 lbs","2,400 lbs","3,800 lbs","5,000 lbs","8,500 lbs","12,000 lbs","15,000 lbs","20,000 lbs"];
+const PIECES=["1 pallet","2 pallets","3 pallets","5 pallets","8 pallets","12 pallets","15 pallets"];
+const VAPID_PUBLIC="BMKTh9JfvwSJ7YP-4TZveomzVbIOZ3egpzm0EAOo9RewmSdhPMKkm9a-B6kohmLPyiVakKgBNNhe7pBgbm67NbI";
+
+let map,markers=[],routeLines=[],currentShipment=null,animationIntervals=[],trackingMode="simulated";
+let authToken=localStorage.getItem("freight_auth_token")||null;
+let currentUser=JSON.parse(localStorage.getItem("freight_user")||"null");
+let currentFilter="all";
+const STORE_KEY="freight_tracker_shipments";
+
+function rand(a){return a[Math.floor(Math.random()*a.length)]}
+function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function genTracking(){return["FX","FD","FE","FP","F1","F2"][Math.floor(Math.random()*6)]+Array.from({length:10},()=>Math.floor(Math.random()*10)).join("")}
+
+function genRoute(o,d,n){const r=[o],av=CITIES.filter(c=>c.name!==o.name&&c.name!==d.name).sort(()=>Math.random()-.5);for(let i=0;i<Math.min(n,av.length);i++)r.push(av[i]);r.push(d);return r}
+function genEvents(route,curIdx,start){const ev=[];let t=start;for(let i=0;i<=Math.min(curIdx,route.length-1);i++){const c=route[i],isO=i===0,isD=i===route.length-1,isL=i===curIdx;let s;if(isO)s=STATUSES[0];else if(isD&&isL)s=STATUSES[3];else if(isL)s=rand([STATUSES[1],STATUSES[4],STATUSES[5],STATUSES[6]]);else s=rand([STATUSES[5],STATUSES[6]]);ev.push({timestamp:new Date(t).toISOString(),location:c.name,coordinates:{lat:c.lat,lng:c.lng},status:s.code,statusLabel:s.label,statusColor:s.color,description:`${s.label} at ${c.name}`});t+=randInt(2,12)*36e5}return ev}
+
+function genShipment(opts={}){
+  const o=opts.origin||rand(CITIES);let d=opts.dest||rand(CITIES);while(d.name===o.name)d=rand(CITIES);
+  const stops=opts.stops||randInt(1,4),route=genRoute(o,d,stops),start=Date.now()-randInt(1,48)*36e5;
+  const curIdx=opts.currentStop||randInt(1,route.length-1),events=genEvents(route,curIdx,start),cur=events[events.length-1];
+  return{trackingNumber:opts.trackingNumber||genTracking(),carrier:rand(CARRIERS),service:rand(["Priority","Economy","Standard","Express"]),
+    origin:{city:o.name,coordinates:{lat:o.lat,lng:o.lng}},destination:{city:d.name,coordinates:{lat:d.lat,lng:d.lng}},
+    route:route.map(c=>({city:c.name,coordinates:{lat:c.lat,lng:c.lng}})),weight:rand(WEIGHTS),pieces:rand(PIECES),
+    estimatedDelivery:new Date(Date.now()+randInt(1,5)*864e5).toISOString(),status:cur.status,statusLabel:cur.statusLabel,statusColor:cur.statusColor,
+    progress:Math.round(curIdx/(route.length-1)*100),currentLocation:{city:cur.location,coordinates:cur.coordinates},
+    events,createdAt:new Date(start).toISOString(),updatedAt:new Date().toISOString(),isLive:true,simulatedProgress:0}
+}
+
+function loadShipments(){try{return JSON.parse(localStorage.getItem(STORE_KEY)||"{}")}catch(e){return{}}}
+function saveShipments(s){localStorage.setItem(STORE_KEY,JSON.stringify(s))}
+function getShipment(n){return loadShipments()[n]||null}
+function getAllShipments(){return Object.values(loadShipments())}
+function deleteShipment(n){const s=loadShipments();delete s[n];saveShipments(s)}
+
+// Auth functions
+async function submitAuth(){
+  const isLogin=document.getElementById("authTitle").textContent==="Login";
+  const email=document.getElementById("authEmail").value;
+  const password=document.getElementById("authPassword").value;
+  const username=document.getElementById("authUsername").value;
+  
+  if(!email||!password){showToast("Fill in all fields","error");return}
+  if(!isLogin&&!username){showToast("Username required","error");return}
+  
+  try{
+    const endpoint=isLogin?"/api/auth/login":"/api/auth/register";
+    const body=isLogin?{email,password}:{username,email,password};
+    const resp=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const data=await resp.json();
+    if(data.error){showToast(data.error,"error");return}
+    
+    authToken=data.token;
+    currentUser=data.user;
+    localStorage.setItem("freight_auth_token",authToken);
+    localStorage.setItem("freight_user",JSON.stringify(currentUser));
+    updateUserUI();
+    closeAuthModal();
+    subscribeToPush();
+    showToast("Welcome, "+currentUser.username+"!","success");
+  }catch(e){showToast("Connection error","error")}
+}
+
+function logout(){
+  authToken=null;currentUser=null;
+  localStorage.removeItem("freight_auth_token");
+  localStorage.removeItem("freight_user");
+  updateUserUI();
+  showToast("Logged out","info");
+}
+
+function updateUserUI(){
+  const authBtns=document.getElementById("authButtons");
+  const userProfile=document.getElementById("userProfile");
+  if(currentUser){
+    authBtns.style.display="none";userProfile.style.display="flex";
+    document.getElementById("userAvatar").textContent=currentUser.username[0].toUpperCase();
+    document.getElementById("userEmail").textContent=currentUser.email;
+  }else{
+    authBtns.style.display="flex";userProfile.style.display="none";
+  }
+}
+
+function toggleAuthMode(){
+  const isLogin=document.getElementById("authTitle").textContent==="Login";
+  document.getElementById("authTitle").textContent=isLogin?"Create Account":"Login";
+  document.getElementById("authSubtitle").textContent=isLogin?"Join Freight Tracker Pro":"Welcome back";
+  document.getElementById("registerFields").style.display=isLogin?"block":"none";
+  document.getElementById("authSubmitBtn").textContent=isLogin?"Sign Up":"Login";
+  document.getElementById("authToggleText").textContent=isLogin?"Already have an account?":"Don't have an account?";
+  document.getElementById("authToggleLink").textContent=isLogin?"Login":"Sign Up";
+}
+
+function loginWithGitHub(){window.location.href="/api/auth/github"}
+
+async function checkGitHubAvailable(){
+  try{
+    const resp=await fetch("/api/auth/github/available");
+    const data=await resp.json();
+    document.getElementById("githubLoginSection").style.display=data.available?"block":"none";
+  }catch(e){document.getElementById("githubLoginSection").style.display="none"}
+}
+
+function openAuthModal(mode){
+  document.getElementById("authModal").classList.add("active");
+  if(mode==="register"){document.getElementById("authTitle").textContent="Create Account";document.getElementById("registerFields").style.display="block";document.getElementById("authSubmitBtn").textContent="Sign Up"}
+  else{document.getElementById("authTitle").textContent="Login";document.getElementById("registerFields").style.display="none";document.getElementById("authSubmitBtn").textContent="Login"}
+}
+function closeAuthModal(){document.getElementById("authModal").classList.remove("active")}
+
+// Push notifications
+async function subscribeToPush(){
+  if(!currentUser||!("serviceWorker" in navigator)||!("PushManager" in window))return;
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:VAPID_PUBLIC});
+    if(authToken){
+      await fetch("/api/notifications/subscribe",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+authToken},body:JSON.stringify(sub.toJSON())});
+    }
+  }catch(e){}
+}
+
+async function checkNotifications(){
+  if(!currentUser||!authToken)return;
+  try{
+    const resp=await fetch("/api/notifications",{headers:{"Authorization":"Bearer "+authToken}});
+    const notifs=await resp.json();
+    const unread=notifs.filter(n=>!n.read).length;
+    const badge=document.getElementById("notifCount");
+    if(unread>0){badge.style.display="flex";badge.textContent=unread}else{badge.style.display="none"}
+    
+    const list=document.getElementById("notifList");
+    if(!notifs.length){list.innerHTML='<div style="padding:20px;text-align:center;color:var(--t3);font-size:12px">No notifications</div>';return}
+    list.innerHTML=notifs.map(n=>`<div class="notification-item ${n.read?"":"unread"}" onclick="markNotifRead('${n.id}')"><div class="title">${n.title}</div><div class="msg">${n.message}</div><div class="time">${new Date(n.created_at).toLocaleString()}</div></div>`).join("");
+  }catch(e){}
+}
+
+function toggleNotifications(){
+  const dd=document.getElementById("notifDropdown");
+  dd.classList.toggle("show");
+  if(dd.classList.contains("show"))checkNotifications();
+}
+
+async function markNotifRead(id){
+  if(!authToken)return;
+  await fetch("/api/notifications/"+id+"/read",{method:"PUT",headers:{"Authorization":"Bearer "+authToken}});
+  checkNotifications();
+}
+
+async function markAllRead(){
+  if(!authToken)return;
+  await fetch("/api/notifications/read-all",{method:"PUT",headers:{"Authorization":"Bearer "+authToken}});
+  checkNotifications();
+}
+
+// Theme
+function toggleTheme(){document.body.classList.toggle("light-theme");localStorage.setItem("theme",document.body.classList.contains("light-theme")?"light":"dark")}
+
+// Search/filter
+let allShipmentsCache=[];
+function filterShipments(){
+  const q=document.getElementById("searchShipments").value.toLowerCase();
+  let filtered=allShipmentsCache;
+  if(currentFilter==="active")filtered=filtered.filter(s=>s.status!=="DL");
+  else if(currentFilter==="transit")filtered=filtered.filter(s=>["IT","AW","DP"].includes(s.status));
+  else if(currentFilter==="delivered")filtered=filtered.filter(s=>s.status==="DL");
+  if(q)filtered=filtered.filter(s=>s.trackingNumber.toLowerCase().includes(q)||s.origin.city.toLowerCase().includes(q)||s.destination.city.toLowerCase().includes(q));
+  renderShipmentList(filtered);
+}
+
+function setFilter(f,btn){
+  currentFilter=f;
+  document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  filterShipments();
+}
+
+function exportCSV(){
+  const headers=["Tracking Number","Carrier","Origin","Destination","Status","Progress","Weight","Pieces","Created"];
+  const rows=allShipmentsCache.map(s=>[s.trackingNumber,s.carrier,s.origin.city,s.destination.city,s.statusLabel,s.progress+"%",s.weight,s.pieces,s.createdAt]);
+  const csv=[headers.join(","),...rows.map(r=>r.map(c=>`"${c||''}"`).join(","))].join("\n");
+  const blob=new Blob([csv],{type:"text/csv"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="shipments.csv";a.click();
+  showToast("CSV exported","success");
+}
+
+function toggleUserMenu(){document.getElementById("userDropdown").style.display=document.getElementById("userDropdown").style.display==="block"?"none":"block"}
+
+async function detectCarrier(trackingNumber){
+  try{
+    const resp=await fetch("/api/detect",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tracking_number:trackingNumber})});
+    const data=await resp.json();
+    if(data.meta&&data.meta.code===200&&data.data&&data.data.length>0)return data.data[0];
+    return null;
+  }catch(e){return null}
+}
+
+async function trackRealShipment(trackingNumber,carrierCode){
+  try{
+    const body={tracking_number:trackingNumber};
+    if(carrierCode)body.carrier_code=carrierCode;
+    const resp=await fetch("/api/track",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const data=await resp.json();
+    return data;
+  }catch(e){return{meta:{code:500,message:e.message}}}
+}
+
+function mapTracktryStatus(status){
+  const map={pending:{code:"PU",label:"Picked Up"},notfound:{code:"NF",label:"Not Found"},transit:{code:"IT",label:"In Transit"},pickup:{code:"OH",label:"Out for Delivery"},delivered:{code:"DL",label:"Delivered"},undelivered:{code:"EX",label:"Failed Attempt"},exception:{code:"EX",label:"Exception"},expired:{code:"EX",label:"Expired"}};
+  return map[status]||{code:"IT",label:status};
+}
+
+function buildRealShipment(item){
+  const st=mapTracktryStatus(item.status);
+  
+  const cityCoords={
+    "Los Angeles, CA":{lat:34.0522,lng:-118.2437},"New York, NY":{lat:40.7128,lng:-74.006},
+    "Chicago, IL":{lat:41.8781,lng:-87.6298},"Houston, TX":{lat:29.7604,lng:-95.3698},
+    "Phoenix, AZ":{lat:33.4484,lng:-112.074},"Dallas, TX":{lat:32.7767,lng:-96.797},
+    "Atlanta, GA":{lat:33.749,lng:-84.388},"Miami, FL":{lat:25.7617,lng:-80.1918},
+    "Seattle, WA":{lat:47.6062,lng:-122.3321},"Denver, CO":{lat:39.7392,lng:-104.9903},
+    "Memphis, TN":{lat:35.1495,lng:-90.049},"Nashville, TN":{lat:36.1627,lng:-86.7816},
+    "Indianapolis, IN":{lat:39.7684,lng:-86.1581},"Columbus, OH":{lat:39.9612,lng:-82.9988},
+    "Detroit, MI":{lat:42.3314,lng:-83.0458},"Philadelphia, PA":{lat:39.9526,lng:-75.1652},
+    "Charlotte, NC":{lat:35.2271,lng:-80.8431},"Kansas City, MO":{lat:39.0997,lng:-94.5786},
+    "Minneapolis, MN":{lat:44.9778,lng:-93.265},"Salt Lake City, UT":{lat:40.7608,lng:-111.891},
+    "Portland, OR":{lat:45.5152,lng:-122.6784},"San Francisco, CA":{lat:37.7749,lng:-122.4194},
+    "Boston, MA":{lat:42.3601,lng:-71.0589},"Washington, DC":{lat:38.9072,lng:-77.0369},
+    "Las Vegas, NV":{lat:36.1699,lng:-115.1398},"Austin, TX":{lat:30.2672,lng:-97.7431},
+    "San Diego, CA":{lat:32.7157,lng:-117.1611},"Tampa, FL":{lat:27.9506,lng:-82.4572},
+    "St. Louis, MO":{lat:38.6270,lng:-90.1994},"Pittsburgh, PA":{lat:40.4406,lng:-79.9959},
+    "Cincinnati, OH":{lat:39.1031,lng:-84.5120},"Kansas City, KS":{lat:39.1067,lng:-94.6773},
+    "Omaha, NE":{lat:41.2565,lng:-95.9345},"Memphis, TN":{lat:35.1495,lng:-90.049},
+    "Louisville, KY":{lat:38.2527,lng:-85.7585},"Milwaukee, WI":{lat:43.0389,lng:-87.9065},
+    "Jacksonville, FL":{lat:30.3322,lng:-81.6557},"Columbus, GA":{lat:32.4610,lng:-84.9877},
+    "Toronto, ON":{lat:43.6532,lng:-79.3832},"Montreal, QC":{lat:45.5017,lng:-73.5673},
+    "Vancouver, BC":{lat:49.2827,lng:-123.1207},"Calgary, AB":{lat:51.0447,lng:-114.0719},
+    "Edmonton, AB":{lat:53.5461,lng:-113.4938},"Ottawa, ON":{lat:45.4215,lng:-75.6972},
+    "Mexico City":{lat:19.4326,lng:-99.1332},"Guadalajara":{lat:20.6597,lng:-103.3496},
+    "Monterrey":{lat:25.6866,lng:-100.3161},"London, UK":{lat:51.5074,lng:-0.1278},
+    "Manchester, UK":{lat:53.4808,lng:-2.2426},"Birmingham, UK":{lat:52.4862,lng:-1.8904},
+    "Berlin, Germany":{lat:52.5200,lng:13.4050},"Munich, Germany":{lat:48.1351,lng:11.5820},
+    "Hamburg, Germany":{lat:53.5511,lng:9.9937},"Frankfurt, Germany":{lat:50.1109,lng:8.6821},
+    "Paris, France":{lat:48.8566,lng:2.3522},"Lyon, France":{lat:45.7640,lng:4.8357},
+    "Marseille, France":{lat:43.2965,lng:5.3698},"Madrid, Spain":{lat:40.4168,lng:-3.7038},
+    "Barcelona, Spain":{lat:41.3851,lng:2.1734},"Rome, Italy":{lat:41.9028,lng:12.4964},
+    "Milan, Italy":{lat:45.4642,lng:9.1900},"Amsterdam, Netherlands":{lat:52.3676,lng:4.9041},
+    "Rotterdam, Netherlands":{lat:51.9244,lng:4.4777},"Brussels, Belgium":{lat:50.8503,lng:4.3517},
+    "Zurich, Switzerland":{lat:47.3769,lng:8.5417},"Vienna, Austria":{lat:48.2082,lng:16.3738},
+    "Prague, Czech Republic":{lat:50.0755,lng:14.4378},"Warsaw, Poland":{lat:52.2297,lng:21.0122},
+    "Stockholm, Sweden":{lat:59.3293,lng:18.0686},"Copenhagen, Denmark":{lat:55.6761,lng:12.5683},
+    "Oslo, Norway":{lat:59.9139,lng:10.7522},"Helsinki, Finland":{lat:60.1699,lng:24.9384},
+    "Dublin, Ireland":{lat:53.3498,lng:-6.2603},"Lisbon, Portugal":{lat:38.7223,lng:-9.1393},
+    "Tokyo, Japan":{lat:35.6762,lng:139.6503},"Osaka, Japan":{lat:34.6937,lng:135.5023},
+    "Shanghai, China":{lat:31.2304,lng:121.4737},"Beijing, China":{lat:39.9042,lng:116.4074},
+    "Guangzhou, China":{lat:23.1291,lng:113.2644},"Shenzhen, China":{lat:22.5431,lng:114.0579},
+    "Hong Kong":{lat:22.3193,lng:114.1694},"Singapore":{lat:1.3521,lng:103.8198},
+    "Seoul, South Korea":{lat:37.5665,lng:126.9780},"Busan, South Korea":{lat:35.1796,lng:129.0756},
+    "Taipei, Taiwan":{lat:25.0330,lng:121.5654},"Bangkok, Thailand":{lat:13.7563,lng:100.5018},
+    "Kuala Lumpur, Malaysia":{lat:3.1390,lng:101.6869},"Jakarta, Indonesia":{lat:-6.2088,lng:106.8456},
+    "Manila, Philippines":{lat:14.5995,lng:120.9842},"Ho Chi Minh City, Vietnam":{lat:10.8231,lng:106.6297},
+    "Mumbai, India":{lat:19.0760,lng:72.8777},"Delhi, India":{lat:28.7041,lng:77.1025},
+    "Bangalore, India":{lat:12.9716,lng:77.5946},"Chennai, India":{lat:13.0827,lng:80.2707},
+    "Sydney, Australia":{lat:-33.8688,lng:151.2093},"Melbourne, Australia":{lat:-37.8136,lng:144.9631},
+    "Brisbane, Australia":{lat:-27.4698,lng:153.0251},"Perth, Australia":{lat:-31.9505,lng:115.8605},
+    "Auckland, New Zealand":{lat:-36.8485,lng:174.7633},"Wellington, New Zealand":{lat:-41.2865,lng:174.7762},
+    "São Paulo, Brazil":{lat:-23.5505,lng:-46.6333},"Rio de Janeiro, Brazil":{lat:-22.9068,lng:-43.1729},
+    "Buenos Aires, Argentina":{lat:-34.6037,lng:-58.3816},"Santiago, Chile":{lat:-33.4489,lng:-70.6693},
+    "Lima, Peru":{lat:-12.0464,lng:-77.0428},"Bogotá, Colombia":{lat:4.7110,lng:-74.0721},
+    "Johannesburg, South Africa":{lat:-26.2041,lng:28.0473},"Cape Town, South Africa":{lat:-33.9249,lng:18.4241},
+    "Cairo, Egypt":{lat:30.0444,lng:31.2357},"Dubai, UAE":{lat:25.2048,lng:55.2708},
+    "Abu Dhabi, UAE":{lat:24.4539,lng:54.3773},"Doha, Qatar":{lat:25.2854,lng:51.5310},
+    "Riyadh, Saudi Arabia":{lat:24.7136,lng:46.6753},"Jeddah, Saudi Arabia":{lat:21.4858,lng:39.1925}
+  };
+  
+  function getCoords(city){
+    if(!city)return{lat:39.8283,lng:-98.5795};
+    const clean=city.replace(/\s*-\s*/g,", ").trim();
+    if(cityCoords[clean])return cityCoords[clean];
+    const match=Object.keys(cityCoords).find(k=>clean.toLowerCase().includes(k.toLowerCase().split(",")[0]));
+    return match?cityCoords[match]:{lat:39.8283+Math.random()*5-2.5,lng:-98.5795+Math.random()*10-5};
+  }
+  
+  const events=(item.origin_info&&item.origin_info.trackinfo||[]).map((t,i,arr)=>{
+    const reversed=arr.length-1-i;
+    const progress=Math.min(95,Math.max(5,(i+1)/arr.length*100));
+    const lat=34.0522+(39.9526-34.0522)*(progress/100);
+    const lng=-118.2437+(-75.1652+118.2437)*(progress/100);
+    return{timestamp:t.Date,location:t.Details||t.StatusDescription,coordinates:{lat:lat+Math.random()*2-1,lng:lng+Math.random()*2-1},status:st.code,statusLabel:st.label,statusColor:"#3b82f6",description:t.StatusDescription};
+  });
+  if(!events.length&&item.lastEvent){
+    const loc=item.lastEvent.split(",")[0]||"In Transit";
+    const coords=getCoords(loc);
+    events.push({timestamp:item.lastUpdateTime||new Date().toISOString(),location:loc,coordinates:coords,status:st.code,statusLabel:st.label,statusColor:"#3b82f6",description:item.lastEvent});
+  }
+  const progress=item.status==="delivered"?100:item.status==="transit"?Math.min(90,Math.max(10,events.length*15)):events.length>0?50:0;
+  const originCoords=getCoords(item.original_country||item.from||"");
+  const destCoords=getCoords(item.destination_country||item.to||"");
+  const currentCoords=events.length?events[events.length-1].coordinates:originCoords;
+  return{
+    trackingNumber:item.tracking_number,carrier:item.carrier_code,service:"Standard",
+    origin:{city:item.original_country||item.from||"Origin",coordinates:originCoords},
+    destination:{city:item.destination_country||item.to||"Destination",coordinates:destCoords},
+    route:[{city:item.original_country||item.from||"Origin",coordinates:originCoords},...events.map(e=>({city:e.location,coordinates:e.coordinates})),{city:item.destination_country||item.to||"Destination",coordinates:destCoords}],
+    weight:"—",pieces:"—",estimatedDelivery:new Date(Date.now()+3*864e5).toISOString(),
+    status:st.code,statusLabel:st.label,statusColor:"#3b82f6",progress,
+    currentLocation:{city:events.length?events[events.length-1].location:"In Transit",coordinates:currentCoords},
+    events,createdAt:item.created_at||new Date().toISOString(),updatedAt:item.updated_at||new Date().toISOString(),
+    isLive:true,simulatedProgress:0,isReal:true,
+    carrierName:item.carrier_code,originalCountry:item.original_country,destinationCountry:item.destination_country,
+    lastEvent:item.lastEvent,lastUpdateTime:item.lastUpdateTime
+  };
+}
+
+function initMap(){map=L.map("map",{center:[39.8283,-98.5795],zoom:4,zoomControl:false,attributionControl:false});L.control.zoom({position:"bottomright"}).addTo(map);L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:19}).addTo(map);loadShipmentsToList()}
+function clearMap(){markers.forEach(m=>map.removeLayer(m));routeLines.forEach(l=>map.removeLayer(l));markers=[];routeLines=[];stopAnimations()}
+function stopAnimations(){animationIntervals.forEach(id=>clearInterval(id));animationIntervals=[]}
+
+function createMarkerIcon(type,label){
+  const colors={origin:"#22c55e",current:"#3b82f6",destination:"#ef4444",stop:"#94a3b8"},c=colors[type]||colors.stop;
+  return L.divIcon({className:"custom-marker",html:`<div style="position:relative"><div class="marker-dot ${type}" style="background:${c};box-shadow:0 0 20px ${c}40,0 2px 8px rgba(0,0,0,.3)"></div>${label?`<div class="marker-label">${label}</div>`:""}</div>`,iconSize:[16,16],iconAnchor:[8,8]})
+}
+
+function drawRoute(s){
+  clearMap();const{route,origin,destination,currentLocation}=s;if(!route||route.length<2)return;
+  const rc=route.map(c=>[c.coordinates.lat,c.coordinates.lng]);
+  routeLines.push(L.polyline(rc,{color:"#3b82f6",weight:2,opacity:.4,dashArray:"8,4"}).addTo(map));
+  const ci=route.findIndex(c=>c.city===currentLocation.city);
+  if(ci>0){const tc=route.slice(0,ci+1).map(c=>[c.coordinates.lat,c.coordinates.lng]);routeLines.push(L.polyline(tc,{color:"#3b82f6",weight:3,opacity:.8}).addTo(map))}
+  markers.push(L.marker([origin.coordinates.lat,origin.coordinates.lng],{icon:createMarkerIcon("origin",origin.city)}).addTo(map));
+  markers.push(L.marker([destination.coordinates.lat,destination.coordinates.lng],{icon:createMarkerIcon("destination",destination.city)}).addTo(map));
+  route.forEach((stop,idx)=>{if(idx===0||idx===route.length-1||stop.city===currentLocation.city)return;markers.push(L.marker([stop.coordinates.lat,stop.coordinates.lng],{icon:createMarkerIcon("stop",stop.city)}).addTo(map))});
+  const cm=L.marker([currentLocation.coordinates.lat,currentLocation.coordinates.lng],{icon:createMarkerIcon("current",currentLocation.city)}).addTo(map);markers.push(cm);
+  const bounds=L.latLngBounds([[origin.coordinates.lat,origin.coordinates.lng],[destination.coordinates.lat,destination.coordinates.lng]]);
+  route.forEach(s=>bounds.extend([s.coordinates.lat,s.coordinates.lng]));map.fitBounds(bounds,{padding:[50,50]});
+  return cm;
+}
+
+function animateShipment(s){
+  stopAnimations();if(!s||!s.route||s.route.length<2)return;
+  const{route}=s;let progress=s.simulatedProgress||0;const cm=markers[markers.length-1];if(!cm)return;
+  const iv=setInterval(()=>{
+    if(progress>=100){clearInterval(iv);showToast("Shipment delivered!","success");return}
+    progress+=.5;if(progress>100)progress=100;
+    const ts=route.length-1,ti=Math.min(Math.floor(progress/100*ts)+1,route.length-1),seg=(progress/100*ts)%1;
+    const from=route[Math.max(0,ti-1)]||route[0],to=route[ti];
+    const lat=from.coordinates.lat+(to.coordinates.lat-from.coordinates.lat)*seg;
+    const lng=from.coordinates.lng+(to.coordinates.lng-from.coordinates.lng)*seg;
+    cm.setLatLng([lat,lng]);
+    const pf=document.getElementById("progressFill"),pt=document.getElementById("progressText");
+    if(pf)pf.style.width=progress+"%";if(pt)pt.textContent=Math.round(progress)+"%";
+  },100);animationIntervals.push(iv);
+}
+
+async function trackShipment(){
+  const n=document.getElementById("trackingInput").value.trim().toUpperCase();
+  if(!n){showToast("Enter a tracking number","error");return}
+  let s;
+  if(trackingMode==="simulated"){
+    s=getShipment(n);if(!s){showToast("Shipment not found","error");return}
+  }else{
+    showToast("Looking up shipment...","info");
+    const carrier=document.getElementById("carrierSelect").value;
+    const data=await trackRealShipment(n,carrier);
+    if(!data||!data.data){showToast("API error: "+(data&&data.meta?data.meta.message:"No response"),"error");return}
+    const items=Array.isArray(data.data)?data.data:[data.data];
+    if(!items.length||!items[0].tracking_number){showToast("Shipment not found","error");return}
+    s=buildRealShipment(items[0]);
+    const store=loadShipments();store[s.trackingNumber]=s;saveShipments(store);
+  }
+  
+  currentShipment=s;renderDetails(s);drawRoute(s);
+  if(!s.isReal)animateShipment(s);
+  showToast("Tracking "+n+(s.carrier?" ("+s.carrier+")":""),"info");
+  
+  if(authToken){
+    try{
+      await fetch("/api/shipments",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+authToken},body:JSON.stringify({
+        trackingNumber:s.trackingNumber,carrier:s.carrier,service:s.service,
+        origin:{city:s.origin.city,lat:s.origin.coordinates.lat,lng:s.origin.coordinates.lng},
+        destination:{city:s.destination.city,lat:s.destination.coordinates.lat,lng:s.destination.coordinates.lng},
+        weight:s.weight,pieces:s.pieces,status:s.status,statusLabel:s.statusLabel,progress:s.progress,
+        currentLocation:{city:s.currentLocation.city,lat:s.currentLocation.coordinates.lat,lng:s.currentLocation.coordinates.lng},
+        estimatedDelivery:s.estimatedDelivery,events:s.events,isReal:s.isReal||false
+      })});
+      loadShipmentsToList();
+    }catch(e){}
+  }
+}
+
+function renderDetails(s){
+  const c=document.getElementById("shipmentInfo"),rc=document.getElementById("routeCard"),sb=document.getElementById("statusBadge");
+  sb.style.display="inline-flex";sb.className="badge badge-"+s.status.toLowerCase();sb.textContent=s.statusLabel;
+  const realBadge=s.isReal?'<span style="margin-left:8px;padding:2px 8px;background:rgba(34,197,94,.15);color:#22c55e;border-radius:4px;font-size:10px;font-weight:700">LIVE</span>':'';
+  c.innerHTML=`<div class="shipment-info">
+    <div class="info-item"><div class="label">Tracking #</div><div class="value" style="font-family:monospace;color:var(--accent)">${s.trackingNumber}</div></div>
+    <div class="info-item"><div class="label">Carrier</div><div class="value">${s.carrier}${realBadge}</div></div>
+    <div class="info-item"><div class="label">Origin</div><div class="value">${s.origin.city}</div></div>
+    <div class="info-item"><div class="label">Destination</div><div class="value">${s.destination.city}</div></div>
+    <div class="info-item"><div class="label">Weight</div><div class="value">${s.weight}</div></div>
+    <div class="info-item"><div class="label">Pieces</div><div class="value">${s.pieces}</div></div>
+    <div class="info-item full"><div class="label">Est. Delivery</div><div class="value">${new Date(s.estimatedDelivery).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})}</div></div>
+  </div>
+  <div class="progress-section"><div class="progress-header"><span>Transit Progress</span><strong id="progressText">${s.progress}%</strong></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:${s.progress}%"></div></div></div>`;
+  rc.style.display="block";renderTimeline(s);
+}
+
+function renderTimeline(s){
+  document.getElementById("routeSteps").innerHTML=s.events.map((e,i)=>{
+    const isL=i===s.events.length-1,t=new Date(e.timestamp);
+    return`<div class="route-step ${!isL?"completed":""} ${isL?"active":""}"><div class="step-content"><div class="step-header"><span class="step-city">${e.location}</span><span class="step-time">${t.toLocaleDateString("en-US",{month:"short",day:"numeric"})} ${t.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})}</span></div><div class="step-status"><span class="badge badge-${e.status.toLowerCase()}">${e.statusLabel}</span></div><div class="step-description">${e.description}</div></div></div>`
+  }).reverse().join("");
+}
+
+async function generateShipment(){
+  const o=document.getElementById("originCity").value,d=document.getElementById("destCity").value;
+  const stops=parseInt(document.getElementById("numStops").value)||2,prog=parseInt(document.getElementById("startProgress").value)||30;
+  const opts={stops,currentStop:Math.ceil(prog/100*(stops+1))};
+  if(o)opts.origin=CITIES.find(c=>c.name===o)||{name:o,lat:0,lng:0};
+  if(d)opts.dest=CITIES.find(c=>c.name===d)||{name:d,lat:0,lng:0};
+  const s=genShipment(opts);const store=loadShipments();store[s.trackingNumber]=s;saveShipments(store);
+  currentShipment=s;document.getElementById("trackingInput").value=s.trackingNumber;
+  renderDetails(s);drawRoute(s);animateShipment(s);closeGenerateModal();
+  
+  if(authToken){
+    try{
+      await fetch("/api/shipments",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+authToken},body:JSON.stringify({
+        trackingNumber:s.trackingNumber,carrier:s.carrier,service:s.service,
+        origin:{city:s.origin.city,lat:s.origin.coordinates.lat,lng:s.origin.coordinates.lng},
+        destination:{city:s.destination.city,lat:s.destination.coordinates.lat,lng:s.destination.coordinates.lng},
+        weight:s.weight,pieces:s.pieces,status:s.status,statusLabel:s.statusLabel,progress:s.progress,
+        currentLocation:{city:s.currentLocation.city,lat:s.currentLocation.coordinates.lat,lng:s.currentLocation.coordinates.lng},
+        estimatedDelivery:s.estimatedDelivery,events:s.events,isReal:false
+      })});
+    }catch(e){}
+  }
+  loadShipmentsToList();showToast("Generated: "+s.trackingNumber,"success");
+}
+
+async function bulkGenerate(){
+  const count=Math.min(parseInt(document.getElementById("bulkCount").value)||5,50);const store=loadShipments();
+  const shipments=[];
+  for(let i=0;i<count;i++){const s=genShipment();store[s.trackingNumber]=s;shipments.push(s)}
+  saveShipments(store);closeBulkModal();
+  
+  if(authToken){
+    try{
+      for(const s of shipments){
+        await fetch("/api/shipments",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+authToken},body:JSON.stringify({
+          trackingNumber:s.trackingNumber,carrier:s.carrier,service:s.service,
+          origin:{city:s.origin.city,lat:s.origin.coordinates.lat,lng:s.origin.coordinates.lng},
+          destination:{city:s.destination.city,lat:s.destination.coordinates.lat,lng:s.destination.coordinates.lng},
+          weight:s.weight,pieces:s.pieces,status:s.status,statusLabel:s.statusLabel,progress:s.progress,
+          currentLocation:{city:s.currentLocation.city,lat:s.currentLocation.coordinates.lat,lng:s.currentLocation.coordinates.lng},
+          estimatedDelivery:s.estimatedDelivery,events:s.events,isReal:false
+        })});
+      }
+    }catch(e){}
+  }
+  loadShipmentsToList();showToast("Generated "+count+" shipments","success");
+}
+
+let allShipmentsCache=[];
+
+async function loadShipmentsToList(){
+  let all;
+  if(authToken){
+    try{
+      const resp=await fetch("/api/shipments",{headers:{"Authorization":"Bearer "+authToken}});
+      all=await resp.json();
+      all=all.map(s=>({trackingNumber:s.tracking_number,carrier:s.carrier,service:s.service,origin:{city:s.origin_city,coordinates:{lat:s.origin_lat,lng:s.origin_lng}},destination:{city:s.dest_city,coordinates:{lat:s.dest_lat,lng:s.dest_lng}},weight:s.weight,pieces:s.pieces,status:s.status,statusLabel:s.status_label,progress:s.progress,currentLocation:{city:s.current_city,coordinates:{lat:s.current_lat,lng:s.current_lng}},estimatedDelivery:s.estimated_delivery,events:typeof s.events==="string"?JSON.parse(s.events):s.events,isReal:!!s.is_real,id:s.id}));
+    }catch(e){all=getAllShipments()}
+  }else{
+    all=getAllShipments();
+  }
+  
+  allShipmentsCache=all;
+  const total=all.length,active=all.filter(s=>s.status!=="DL").length,inT=all.filter(s=>["IT","AW","DP"].includes(s.status)).length,del=all.filter(s=>s.status==="DL").length;
+  document.getElementById("totalShipments").textContent=total;
+  document.getElementById("activeShipments").textContent=active;
+  document.getElementById("inTransit").textContent=inT;
+  document.getElementById("delivered").textContent=del;
+  filterShipments();
+}
+
+function renderShipmentList(all){
+  const c=document.getElementById("shipmentList");
+  if(!all.length){c.innerHTML='<div class="empty-state" style="padding:30px"><p>No shipments found</p></div>';return}
+  c.innerHTML=all.map(s=>{
+    const liveTag=s.isReal?'<span style="margin-left:6px;font-size:9px;color:#22c55e;font-weight:700">LIVE</span>':'';
+    const route=`${s.origin.city} → ${s.destination.city}`;
+    return`<div class="shipment-item" onclick="selectShipment('${s.trackingNumber}')"><div><div class="tracking-num">${s.trackingNumber}${liveTag}</div><div class="shipment-route">${route}</div></div><div style="display:flex;align-items:center;gap:8px"><span class="badge badge-${s.status.toLowerCase()}">${s.statusLabel}</span><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteShipmentConfirm('${s.trackingNumber}')" style="padding:4px 8px;font-size:10px">✕</button></div></div>`
+  }).join("");
+}
+
+async function deleteShipmentConfirm(n){
+  if(!confirm("Delete shipment "+n+"?"))return;
+  if(authToken){
+    try{
+      const shipments=await fetch("/api/shipments",{headers:{"Authorization":"Bearer "+authToken}}).then(r=>r.json());
+      const s=shipments.find(x=>x.tracking_number===n);
+      if(s)await fetch("/api/shipments/"+s.id,{method:"DELETE",headers:{"Authorization":"Bearer "+authToken}});
+    }catch(e){}
+  }
+  deleteShipment(n);loadShipmentsToList();showToast("Shipment deleted","info");
+}
+
+function selectShipment(n){document.getElementById("trackingInput").value=n;trackShipment()}
+function openGenerateModal(){document.getElementById("generateModal").classList.add("active")}
+function closeGenerateModal(){document.getElementById("generateModal").classList.remove("active")}
+function openBulkModal(){document.getElementById("bulkModal").classList.add("active")}
+function closeBulkModal(){document.getElementById("bulkModal").classList.remove("active")}
+function showToast(m,t="info"){const e=document.getElementById("toast");e.textContent=m;e.className="toast "+t+" show";setTimeout(()=>e.classList.remove("show"),3000)}
+
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&document.activeElement.id==="trackingInput")trackShipment();if(e.key==="Escape"){closeGenerateModal();closeBulkModal()}});
+document.querySelectorAll(".modal-overlay").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("active")}));
+let autoRefreshInterval=null;
+
+function toggleAutoRefresh(){
+  const btn=document.getElementById("autoRefreshBtn");
+  if(autoRefreshInterval){
+    clearInterval(autoRefreshInterval);
+    autoRefreshInterval=null;
+    btn.textContent="Auto-refresh: OFF";
+    btn.style.background="var(--glass)";
+    showToast("Auto-refresh disabled","info");
+  }else{
+    autoRefreshInterval=setInterval(()=>{if(currentShipment)trackShipment()},30000);
+    btn.textContent="Auto-refresh: ON";
+    btn.style.background="rgba(34,197,94,.2)";
+    btn.style.color="#22c55e";
+    showToast("Auto-refresh enabled (30s)","success");
+  }
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  initMap();
+  
+  // Handle OAuth callback
+  const params=new URLSearchParams(window.location.search);
+  if(params.get("token")){
+    authToken=params.get("token");
+    try{currentUser=JSON.parse(decodeURIComponent(params.get("user")))}catch(e){}
+    localStorage.setItem("freight_auth_token",authToken);
+    localStorage.setItem("freight_user",JSON.stringify(currentUser));
+    window.history.replaceState({},document.title,"/");
+  }
+  
+  if(localStorage.getItem("theme")==="light")document.body.classList.add("light-theme");
+  if(authToken&&currentUser){updateUserUI();subscribeToPush();checkNotifications();setInterval(checkNotifications,60000)}
+  checkGitHubAvailable();
+});
+if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").then(()=>{console.log("SW registered");if("Notification" in window&&Notification.permission==="default"){Notification.requestPermission()}}).catch(()=>{})}
+
+document.addEventListener("click",e=>{
+  if(!e.target.closest(".notification-bell"))document.getElementById("notifDropdown").classList.remove("show");
+  if(!e.target.closest(".user-avatar")&&!e.target.closest(".user-dropdown"))document.getElementById("userDropdown").style.display="none";
+});
+</script>
+</body>
+</html>
