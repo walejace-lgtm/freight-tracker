@@ -610,6 +610,14 @@ function setFilter(f,btn){
   filterShipments();
 }
 
+function setMode(mode){
+  trackingMode=mode;
+  document.getElementById("modeSim").classList.toggle("active",mode==="simulated");
+  document.getElementById("modeReal").classList.toggle("active",mode==="real");
+  document.getElementById("carrierSelect").style.display=mode==="real"?"block":"none";
+  showToast(mode==="simulated"?"Simulated mode":"Real tracking mode","info");
+}
+
 function exportCSV(){
   const headers=["Tracking Number","Carrier","Origin","Destination","Status","Progress","Weight","Pieces","Created"];
   const rows=allShipmentsCache.map(s=>[s.trackingNumber,s.carrier,s.origin.city,s.destination.city,s.statusLabel,s.progress+"%",s.weight,s.pieces,s.createdAt]);
