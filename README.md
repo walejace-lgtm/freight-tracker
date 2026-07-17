@@ -49,7 +49,7 @@ VAPID_PRIVATE=your_vapid_private_key
 ```
 6. Click **Create Web Service**
 7. Wait 2-3 minutes for deployment
-8. Your app is live at `https://freight-tracker.onrender.com`
+8. Your app is live at `https://freight-tracker-cq24.onrender.com`
 
 ### Step 3: Setup GitHub OAuth
 
@@ -57,8 +57,8 @@ VAPID_PRIVATE=your_vapid_private_key
 2. Click **New OAuth App**
 3. Fill in:
    - **Application name**: Freight Tracker Pro
-   - **Homepage URL**: `https://freight-tracker.onrender.com`
-   - **Authorization callback URL**: `https://freight-tracker.onrender.com/api/auth/github/callback`
+   - **Homepage URL**: `https://freight-tracker-cq24.onrender.com`
+   - **Authorization callback URL**: `https://freight-tracker-cq24.onrender.com/api/auth/github/callback`
 4. Copy the **Client ID** and **Client Secret**
 5. Go to Render dashboard > your service > **Environment** tab
 6. Update `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` with the values
