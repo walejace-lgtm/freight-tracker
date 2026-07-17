@@ -11,7 +11,7 @@ const session = require('express-session');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const TRACKTRY_API = 'https://api.tracktry.com';
+const TRACKTRY_API = 'https://api.trackingmore.com/v4';
 const TRACKTRY_KEY = process.env.TRACKTRY_API_KEY;
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
@@ -423,11 +423,11 @@ app.post('/api/detect', async (req, res) => {
     const { tracking_number } = req.body;
     if (!tracking_number) return res.status(400).json({ error: 'tracking_number required' });
 
-    const resp = await fetch(`${TRACKTRY_API}/v1/carriers/detect`, {
+    const resp = await fetch(`${TRACKTRY_API}/carriers/detect`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Tracktry-Api-Key': TRACKTRY_KEY
+        'Trackingmore-Api-Key': TRACKTRY_KEY
       },
       body: JSON.stringify({ tracking_number })
     });
@@ -446,11 +446,11 @@ app.post('/api/track', async (req, res) => {
     const body = { tracking_number };
     if (carrier_code) body.carrier_code = carrier_code;
 
-    const resp = await fetch(`${TRACKTRY_API}/v1/trackings`, {
+    const resp = await fetch(`${TRACKTRY_API}/trackings`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Tracktry-Api-Key': TRACKTRY_KEY
+        'Trackingmore-Api-Key': TRACKTRY_KEY
       },
       body: JSON.stringify(body)
     });
@@ -463,8 +463,8 @@ app.post('/api/track', async (req, res) => {
 
 app.get('/api/track/:id', async (req, res) => {
   try {
-    const resp = await fetch(`${TRACKTRY_API}/v1/trackings/${req.params.id}`, {
-      headers: { 'Tracktry-Api-Key': TRACKTRY_KEY }
+    const resp = await fetch(`${TRACKTRY_API}/trackings/${req.params.id}`, {
+      headers: { 'Trackingmore-Api-Key': TRACKTRY_KEY }
     });
     const data = await resp.json();
     res.json(data);
@@ -475,8 +475,8 @@ app.get('/api/track/:id', async (req, res) => {
 
 app.get('/api/carriers', async (req, res) => {
   try {
-    const resp = await fetch(`${TRACKTRY_API}/v1/carriers`, {
-      headers: { 'Tracktry-Api-Key': TRACKTRY_KEY }
+    const resp = await fetch(`${TRACKTRY_API}/carriers`, {
+      headers: { 'Trackingmore-Api-Key': TRACKTRY_KEY }
     });
     const data = await resp.json();
     res.json(data);
