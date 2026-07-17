@@ -1,0 +1,25 @@
+# robots.txt for Freight Tracker Pro
+# https://freight-tracker.onrender.com
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://freight-tracker.onrender.com/sitemap.xml
+
+# Disallow API endpoints (no need to index)
+Disallow: /api/
+Disallow: /data/
+
+# Allow all major search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /

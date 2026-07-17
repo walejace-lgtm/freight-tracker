@@ -24,7 +24,7 @@ Real-time freight tracking system with animated map, GitHub OAuth, and push noti
 git init
 git add .
 git commit -m "Initial commit"
-git remote add origin https://github.com/YOUR_USERNAME/freight-tracker-pro.git
+git remote add origin https://github.com/walejace-lgtm/freight-tracker.git
 git push -u origin main
 ```
 
@@ -34,7 +34,7 @@ git push -u origin main
 2. Click **New +** > **Web Service**
 3. Connect your GitHub repo
 4. Fill in:
-   - **Name**: freight-tracker-pro
+   - **Name**: freight-tracker
    - **Runtime**: Node
    - **Build Command**: `npm install`
    - **Start Command**: `npm start`
@@ -49,7 +49,7 @@ VAPID_PRIVATE=your_vapid_private_key
 ```
 6. Click **Create Web Service**
 7. Wait 2-3 minutes for deployment
-8. Your app is live at `https://freight-tracker-pro.onrender.com`
+8. Your app is live at `https://freight-tracker.onrender.com`
 
 ### Step 3: Setup GitHub OAuth
 
@@ -57,8 +57,8 @@ VAPID_PRIVATE=your_vapid_private_key
 2. Click **New OAuth App**
 3. Fill in:
    - **Application name**: Freight Tracker Pro
-   - **Homepage URL**: `https://freight-tracker-pro.onrender.com`
-   - **Authorization callback URL**: `https://freight-tracker-pro.onrender.com/api/auth/github/callback`
+   - **Homepage URL**: `https://freight-tracker.onrender.com`
+   - **Authorization callback URL**: `https://freight-tracker.onrender.com/api/auth/github/callback`
 4. Copy the **Client ID** and **Client Secret**
 5. Go to Render dashboard > your service > **Environment** tab
 6. Update `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` with the values

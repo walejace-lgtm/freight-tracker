@@ -1,5 +1,5 @@
 {
-  "name": "freight-tracker-pro",
+  "name": "freight-tracker",
   "version": "1.0.0",
   "description": "Real-time freight tracking system with animated map",
   "main": "server.js",

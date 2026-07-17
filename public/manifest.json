@@ -1,12 +1,17 @@
 {
-  "name": "Freight Tracker Pro",
+  "name": "Freight Tracker Pro - Real-Time Shipment Tracking System",
   "short_name": "FreightTracker",
-  "description": "Real-time freight tracking with animated map",
+  "description": "Track shipments in real-time with animated maps. Supports FedEx, UPS, DHL, USPS and 20+ carriers.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0e1a",
   "theme_color": "#3b82f6",
   "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "scope": "/",
+  "id": "/",
   "icons": [
     {
       "src": "/icon-192.svg",
